@@ -1,7 +1,7 @@
 import {
-  createWorkflow,
+  defineWorkflow,
+  sequenceStep,
   type WorkflowExecutionContext,
-  SequenceNodeBuilder,
 } from '@jshookmcp/extension-sdk/workflow';
 
 const workflowId = 'workflow.ws-protocol-lifter.v1';
@@ -18,8 +18,9 @@ const workflowId = 'workflow.ws-protocol-lifter.v1';
  *   6. Links message patterns to handler call sites
  *   7. Records evidence and emits a protocol summary
  */
-export default createWorkflow(workflowId, 'WebSocket Protocol Lifter')
-  .description(
+export default defineWorkflow(workflowId, 'WebSocket Protocol Lifter', (workflow) =>
+  workflow
+.description(
     'Captures WebSocket messages, clusters by structure, auto-decodes payloads (JSON/base64/msgpack/protobuf), locates handlers, and produces a protocol summary with evidence links.',
   )
   .tags([
@@ -48,7 +49,7 @@ export default createWorkflow(workflowId, 'WebSocket Protocol Lifter')
       ctx.getConfig(`${prefix}.decodeAttempts`, 'json,base64,msgpack,protobuf'),
     );
 
-    const root = new SequenceNodeBuilder('ws-protocol-lifter-root');
+    return sequenceStep('ws-protocol-lifter-root', (root) => {
 
     root
       // ── Phase 1: Enable WS Monitoring & Navigate ──────────────────
@@ -136,7 +137,7 @@ export default createWorkflow(workflowId, 'WebSocket Protocol Lifter')
         },
       });
 
-    return root;
+    });
   })
   .onStart((ctx) => {
     ctx.emitMetric('workflow_runs_total', 1, 'counter', {
@@ -160,4 +161,4 @@ export default createWorkflow(workflowId, 'WebSocket Protocol Lifter')
       error: error.name,
     });
   })
-  .build();
+  );
